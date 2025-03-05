@@ -62,6 +62,10 @@ def smooth_steklov(y: np.ndarray, box_pts: int, ro: float = 0.1) -> np.ndarray:
     return y_smooth
 
 
+def get_ind_fromColumns(columns: list) -> list:
+    return [int(re.search(r"ch\d", name).group(1)) for name in columns]
+
+
 def dbs_A_dFi(df: pd.DataFrame,
               w: float, smooth_length: int,
               ro_A: int = 0.85, ro_dfi: int = 0.5,
@@ -76,7 +80,7 @@ def dbs_A_dFi(df: pd.DataFrame,
     :param smoothing:
     :return:
     '''
-    channels = [int(re.search(r"ch\d", name).group(1)) for name in df.columns]
+    channels = get_ind_fromColumns(df.columns)
 
     if smoothing == "rect":
         smoothing_f = smooth_rect
@@ -102,12 +106,14 @@ def dbs_A_dFi(df: pd.DataFrame,
         df[f"ch{ind}_dfi"] = smoothing_f(np.concatenate([np.diff(fi_data), [0]]), smooth_length, ro_dfi)
 
 
-def get_marked_signal(signal: pd.Series, meta_signal: Signal_meta, stats_params: list,
-                      f_proc: bool = False) -> np.ndarray:
+def get_marked_signal(signal: pd.Series, meta_signal: Signal_meta,
+                      w: float,
+                      stats_params: list, f_proc: bool = False) -> np.ndarray:
     '''
 
     :param signal:
     :param meta_signal:
+    :param w:
     :param stats_params:
     :param f_proc:
     :return:
@@ -118,7 +124,7 @@ def get_marked_signal(signal: pd.Series, meta_signal: Signal_meta, stats_params:
         raise ValueError('Please provide meta_signal')
 
     signal_d1 = np.diff(signal)
-    signal_d1_f = filt_signal(signal_d1, 5, 0.05)
+    signal_d1_f = filt_signal(signal_d1, 5, w)
 
     meta_signal.set_statistics(signal, signal_d1_f,
                                stats_params[0], stats_params[1],
@@ -130,14 +136,21 @@ def get_marked_signal(signal: pd.Series, meta_signal: Signal_meta, stats_params:
     return proc_slices(mark_data, signal, signal_d1_f, meta_signal) if f_proc else mark_data
 
 
-def get_sxr_slices(sxr: pd.Series = None, d_alpha: pd.Series = None, verbose: int = 0) -> np.ndarray:
+def get_shoot_slices(d_alpha: pd.Series = None, sxr: pd.Series = None, verbose: int = 0) -> np.ndarray:
+    '''
+
+    :param d_alpha:
+    :param sxr:
+    :param verbose:
+    :return:
+    '''
     if sxr is None:
         raise ValueError('Please provide sxr')
 
     meta_sxr = Signal_meta(chanel_name="sxr", processing_flag=True)
     meta_sxr.set_edges(length_edge=5, distance_edge=30, scale=0, step_out=20)
 
-    mark_sxr = get_marked_signal(sxr, meta_sxr, [0.8, 0.8, 7., 13.], f_proc=True)
+    mark_sxr = get_marked_signal(sxr, meta_sxr, 0.05, [0.8, 0.8, 7., 13.], f_proc=True)
 
     sxr_slices = get_slices(mark_sxr)
     slices_edges = []
@@ -172,7 +185,7 @@ def get_sxr_slices(sxr: pd.Series = None, d_alpha: pd.Series = None, verbose: in
     meta_da = Signal_meta(chanel_name="da", processing_flag=True)
     meta_da.set_edges(length_edge=50, distance_edge=100)
 
-    mark_data = get_marked_signal(d_alpha, meta_da, [0.7, 0.7, 2., 1.], f_proc=True)[first_slice.l: first_slice.r]
+    mark_data = get_marked_signal(d_alpha, meta_da, 0.1, [0.7, 0.7, 2., 1.], f_proc=True)[first_slice.l: first_slice.r]
 
     da_slices = get_slices(mark_data)
 
