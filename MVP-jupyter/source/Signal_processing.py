@@ -195,7 +195,7 @@ def get_shoot_slices(d_alpha: pd.Series = None, sxr: pd.Series = None, verbose: 
     meta_da = Signal_meta(chanel_name="da", processing_flag=True)
     meta_da.set_edges(length_edge=50, distance_edge=100)
 
-    mark_data = get_marked_signal(d_alpha, meta_da, 0.1, [0.7, 0.7, 2., 1.], f_proc=True)[first_slice.l: first_slice.r]
+    mark_data = get_marked_signal(d_alpha, meta_da, 0.1, [0.7, 0.7, 2., 1.], f_proc=False)[first_slice.l: first_slice.r]
 
     da_slices = get_slices(mark_data)
 
