@@ -4,8 +4,8 @@ import pandas as pd
 
 from sklearn.preprocessing import normalize
 
-from Signal_processing import smooth_steklov, filt_signal, get_ind_fromColumns
-from Peaks_processing import get_d1_crosses, get_groups_from_signal, get_time_delta
+from source.Signal_processing import smooth_steklov, filt_signal, get_ind_fromColumns
+from source.Peaks_processing import get_d1_crosses, get_groups_from_signal, get_time_delta
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
