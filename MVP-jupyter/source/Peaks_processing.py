@@ -63,21 +63,21 @@ class Slice:
 
 
 class Signal_meta:
-    def __init__(self, chanel_name="da", processing_flag=False, 
-                 quantile_edge=0.0, std_edge=1.0, 
-                 length_edge=10, distance_edge=10, scale=1.5, step_out=10, 
+    def __init__(self, chanel_name="da", processing_flag=False,
+                 quantile_edge=0.0, std_edge=1.0,
+                 length_edge=10, distance_edge=10, scale=1.5, step_out=10,
                  std_bottom_edge=0, std_top_edge=1, d_std_bottom_edge=3, d_std_top_edge=6, amplitude_ratio=0.5):
         self.name = chanel_name
         self.proc_fl = processing_flag
-        
+
         self.len_edge = length_edge
         self.dist_edge = distance_edge
         self.scale = scale
         self.step_out = step_out
-        
+
         self.q = quantile_edge
         self.std = std_edge
-        
+
         self.d_q = quantile_edge
         self.d_std = std_edge
 
@@ -87,13 +87,14 @@ class Signal_meta:
         self.d_std_bottom = d_std_bottom_edge
 
         self.max_min_ratio = amplitude_ratio
-        
-    def set_statistics(self, data: np.array, data_diff: np.array, percentile: float, d_percentile: float, std_bottom_edge=0, std_top_edge=1, d_std_bottom_edge=3, d_std_top_edge=6, amplitude_ratio=0.5):
+
+    def set_statistics(self, data: np.array, data_diff: np.array, percentile: float, d_percentile: float,
+                       std_bottom_edge=0, std_top_edge=1, d_std_bottom_edge=3, d_std_top_edge=6, amplitude_ratio=0.5):
         self.q = np.quantile(data, percentile)
         self.std = data.std()
         self.std_top = std_top_edge
         self.std_bottom = std_bottom_edge
-        
+
         self.d_q = np.quantile(data_diff, percentile)
         self.d_std = data_diff.std()
         if self.name == "sxr":
@@ -103,7 +104,7 @@ class Signal_meta:
             self.d_std_bottom = a * np.exp(b * self.d_std)
         else:
             self.d_std_top = d_std_top_edge
-            self.d_std_bottom = d_std_bottom_edge            
+            self.d_std_bottom = d_std_bottom_edge
 
         self.max_min_ratio = amplitude_ratio
 
@@ -136,7 +137,8 @@ def get_peaks(data: np.array, s_i: int) -> np.array:
             loc_max_ind = i
     return np.array(peaks_ind)
 
-def get_boarders_d2(data:np.array, diff_data: np.array, s_i: int, scale=1.5):
+
+def get_boarders_d2(data: np.array, diff_data: np.array, s_i: int, scale=1.5):
     d2_data = np.diff(diff_data)
     peaks_ind = get_peaks(d2_data, s_i)
 
@@ -157,15 +159,17 @@ def get_boarders_d2(data:np.array, diff_data: np.array, s_i: int, scale=1.5):
                 return Slice(0, peaks_ind[0])
     return Slice(peaks_ind[0], peaks_ind[-1])
 
+
 def proc_boarders(data: np.array, data_diff: np.array, start_ind: int, scale=1.5) -> Slice:
     step = 5
-    
+
     diff_coeff = 1
     if data_diff[start_ind] < 0:
         diff_coeff = -1
-    
+
     cur_ind = (start_ind + diff_coeff * step) if 0 < start_ind + diff_coeff * step < data.shape[0] else start_ind
-    while 0 < cur_ind + diff_coeff * step < data.shape[0] and data_diff[cur_ind] * data_diff[cur_ind + diff_coeff * step] > 0:
+    while 0 < cur_ind + diff_coeff * step < data.shape[0] and data_diff[cur_ind] * data_diff[
+        cur_ind + diff_coeff * step] > 0:
         cur_ind += diff_coeff * step
 
     # print(cur_ind - 3 * step, cur_ind + 3 * step, end=" ")
@@ -174,7 +178,10 @@ def proc_boarders(data: np.array, data_diff: np.array, start_ind: int, scale=1.5
     # print(max_ind, length)
 
     # print(max_ind - length, max_ind + 2 * length, end=" ")
-    res_slice = get_boarders_d2(data[max(max_ind - length, 0): min(max_ind + 2 * length, data.shape[0])], data_diff[max(max_ind - length, 0): min(max_ind + 2 * length, data.shape[0])], max(max_ind - length, 0), scale=scale)  # get_boarders(data[max_ind - length: max_ind + 2 * length], loc_max_ind=length) | Slice(0, 3 * length)
+    res_slice = get_boarders_d2(data[max(max_ind - length, 0): min(max_ind + 2 * length, data.shape[0])],
+                                data_diff[max(max_ind - length, 0): min(max_ind + 2 * length, data.shape[0])],
+                                max(max_ind - length, 0),
+                                scale=scale)  # get_boarders(data[max_ind - length: max_ind + 2 * length], loc_max_ind=length) | Slice(0, 3 * length)
     res_slice.move(max_ind - length)
     # print(res_slice.l, res_slice.r)
 
@@ -183,11 +190,12 @@ def proc_boarders(data: np.array, data_diff: np.array, start_ind: int, scale=1.5
 
     # print(res_slice.l, res_slice.r, end=" ")
     # print(abs(data_diff[res_slice.l:res_slice.r].max() - np.quantile(data_diff, 0.7)), data_diff.std())
-    
+
     return res_slice
 
 
-def proc_slices(mark_data: np.array, data: np.array, data_diff: np.array, meta: Signal_meta) -> np.array:  # data: np.array, , scale=1.5 , step_out=10
+def proc_slices(mark_data: np.array, data: np.array, data_diff: np.array,
+                meta: Signal_meta) -> np.array:  # data: np.array, , scale=1.5 , step_out=10
     proc_slice = Slice(0, 50)
     cur_slice = Slice(0, 51)
     f_fragment = False
@@ -198,7 +206,7 @@ def proc_slices(mark_data: np.array, data: np.array, data_diff: np.array, meta: 
     proc_slice = cur_slice.copy()
 
     c = 0
-    
+
     while cur_slice.r < res_mark.shape[0]:
         if res_mark[cur_slice.r] == 1.0:
             if not f_fragment:
@@ -212,27 +220,29 @@ def proc_slices(mark_data: np.array, data: np.array, data_diff: np.array, meta: 
                     res_mark[proc_slice.l: proc_slice.r] = 0.0
                     start_ind = proc_slice.l if data_diff[proc_slice.l] > 0 else proc_slice.r
                     proc_slice = proc_boarders(data, data_diff, start_ind, meta.scale)
-                    
+
                     cur_slice = Slice(proc_slice.r, proc_slice.r)
-                
+
                 proc_slice.expand(meta.step_out)
 
-                if meta.proc_fl and abs(data_diff[proc_slice.l:proc_slice.r].max() - meta.d_q) < meta.d_std_top * meta.d_std and \
-                   abs(data_diff[proc_slice.l:proc_slice.r].min() - meta.d_q) < meta.d_std_top * meta.d_std:
+                if meta.proc_fl and abs(
+                        data_diff[proc_slice.l:proc_slice.r].max() - meta.d_q) < meta.d_std_top * meta.d_std and \
+                        abs(data_diff[proc_slice.l:proc_slice.r].min() - meta.d_q) < meta.d_std_top * meta.d_std:
                     proc_slice.set_mark(0)
-                
+
                 if meta.name == "sxr":
                     if abs(abs(data_diff[proc_slice.l:proc_slice.r].min()) - meta.d_q) > meta.d_std_top * meta.d_std:
                         proc_slice.set_mark(1)
-                        
-                    if abs(data_diff[proc_slice.l:proc_slice.r].max() / data_diff[proc_slice.l:proc_slice.r].min()) < meta.max_min_ratio:
+
+                    if abs(data_diff[proc_slice.l:proc_slice.r].max() / data_diff[
+                                                                        proc_slice.l:proc_slice.r].min()) < meta.max_min_ratio:
                         proc_slice.set_mark(1)
                     else:
                         proc_slice.set_mark(0)
-                
+
                 res_mark[proc_slice.l: proc_slice.r] = proc_slice.mark
                 c += proc_slice.mark
-                
+
                 proc_slice = cur_slice.copy()
             f_fragment = False
             cur_slice.collapse_boarders()
@@ -240,7 +250,7 @@ def proc_slices(mark_data: np.array, data: np.array, data_diff: np.array, meta: 
             cur_slice.collapse_boarders()
             if proc_slice.is_null():
                 proc_slice = cur_slice.copy()
-    
+
         cur_slice.step()
     # print(c)
 
@@ -252,7 +262,7 @@ def get_slices(mark_data: np.array):
     f_fragment = False
 
     slices_list = []
-    
+
     while cur_slice.r < mark_data.shape[0]:
         if mark_data[cur_slice.r] == 1.0:
             if not f_fragment:
@@ -279,7 +289,7 @@ def get_d2_peaks(diff_data: np.array, mark_data: np.array, s_i: int):
         elif fr_fl and mark_data[i] == 0:
             fr_fl = False
             d2_data = np.diff(diff_data)
-            res = get_peaks(d2_data[l_-10:i+30], s_i) + l_-10
+            res = get_peaks(d2_data[l_ - 10:i + 30], s_i) + l_ - 10
             peaks_ind += res.tolist()
     peaks_ind = np.array(peaks_ind)
     return peaks_ind, d2_data[peaks_ind]
@@ -290,14 +300,14 @@ def zero_bin_search(arr: np.array):
     r = arr.shape[0] - 1
     if arr[l] * arr[r] > 0 or r - l <= 0:
         return -1
-    
+
     while r - l > 1:
         m = (r - l) // 2 + l
         if arr[l] * arr[m] <= 0:
             r = m
         else:
             l = m
-    
+
     return r if arr[l] > arr[r] else l
 
 
@@ -306,7 +316,7 @@ def get_d1_crosses(d1_data: np.array, d2_data: np.array, start: int, end: int, d
     d1_m = d1_data.mean()
     d2_std = d2_data.std()
     d2_m = d2_data.mean()
-    
+
     cur_slice = Slice(start, start + 1)
     f_slice = False
     ans = []
@@ -314,35 +324,36 @@ def get_d1_crosses(d1_data: np.array, d2_data: np.array, start: int, end: int, d
         if abs(d1_data[cur_slice.r] - d1_m) < d1_std * d1_coef and d2_data[cur_slice.r] - d2_m < d2_std / 3 * 2:
             if not f_slice and (d1_data[cur_slice.r - 1] - d1_m) > d1_std * d1_coef:
                 f_slice = True
-        
-        elif f_slice:  #  and d1_data[cur_slice.r] < 0
+
+        elif f_slice:  # and d1_data[cur_slice.r] < 0
             # print(cur_slice)
             if d1_data[cur_slice.r] > d1_m:
                 cur_slice.r = np.argmin(d1_data[cur_slice.l: cur_slice.r]) + cur_slice.l
-                
+
             if d1_data[cur_slice.l] >= d1_m and d1_data[cur_slice.r] <= d1_m:
                 # print(cur_slice)
                 zero_i = zero_bin_search(d1_data[cur_slice.l: cur_slice.r])
                 if zero_i != -1:
                     ans.append(zero_i + cur_slice.l)
-            
+
             f_slice = False
             cur_slice.collapse_boarders()
-            
+
         elif not f_slice:
             cur_slice.collapse_boarders()
-    
+
         cur_slice.step()
 
     if f_slice:
         if d1_data[cur_slice.r] > d1_m:
             cur_slice.r = np.argmin(d1_data[cur_slice.l: cur_slice.r]) + cur_slice.l
-            
+
         if d1_data[cur_slice.l] >= d1_m and d1_data[cur_slice.r] <= d1_m:
             zero_i = zero_bin_search(d1_data[cur_slice.l: cur_slice.r])
             if zero_i != -1:
                 ans.append(zero_i + cur_slice.l)
     return np.array(ans)
+
 
 def combine_groups(groups):
     groups.sort(key=lambda x: len(x), reverse=True)
@@ -379,7 +390,7 @@ def combine_groups(groups):
     return res_groups
 
 
-def check_subsequention(arr1, arr2) -> int:    
+def check_subsequention(arr1, arr2) -> int:
     n = min(len(arr1), len(arr2))
     # print(arr1, arr2, n)
     for i in range(1, n + 1):
@@ -409,14 +420,16 @@ def in_array(arr1, arr2) -> bool:
     return False
 
 
-def get_valide_groups_from_struct_by_delta(groups_struct, delta, DELTA_DELTA, MIN_GROUP, DELTA_MAX):  # groups_struct = {Point: {Delta: [mistake: float, group: list]}}
+def get_valide_groups_from_struct_by_delta(groups_struct, delta, DELTA_DELTA,
+                                           MIN_GROUP,
+                                           DELTA_MAX):  # groups_struct = {Point: {Delta: [mistake: float, group: list]}}
     res_groups = []
     if delta < DELTA_MAX:
         # get groups from delta
         for item in groups_struct[delta]:
             if len(item[1]) > MIN_GROUP:
                 res_groups.append(item[1])
-                
+
         # get groups from delta +- delta_delta 
         for d2 in groups_struct.keys():
             if d != d2 and d2 < DELTA_MAX and abs(d - d2) / d <= DELTA_DELTA:
@@ -433,26 +446,29 @@ def get_valide_groups_from_struct_by_amplitude(groups_struct, d_alpha, peaks):
         for item in groups_struct[delta]:
             p_arr = item[1]
             n = len(p_arr)
-            cur_group = [p_arr[0]]
-            group_m_amplitude = d_alpha[peaks[cur_group]][0]
-            
+
             if n <= 2 and p_arr[1] != p_arr[0] + 1:  # check valid by consistance on 0 elemnt
                 continue
-            
+
+            cur_group = [p_arr[0]]
+            group_m_amplitude = d_alpha[peaks[cur_group]][0]
+
             for i in range(1, n):
                 if i < n - 1 and p_arr[i + 1] != p_arr[i] + 1:  # check valid by consistance on i elemnt
-                    if abs(d_alpha[peaks[p_arr[i]]] - group_m_amplitude) / max(group_m_amplitude, d_alpha[peaks[p_arr[i]]]) <= 0.34:
+                    if abs(d_alpha[peaks[p_arr[i]]] - group_m_amplitude) / max(group_m_amplitude,
+                                                                               d_alpha[peaks[p_arr[i]]]) <= 0.34:
                         cur_group.append(p_arr[i])
                         group_m_amplitude = np.nanmean(d_alpha[peaks[cur_group]])
                     break
-                
-                if abs(d_alpha[peaks[p_arr[i]]] - group_m_amplitude) / max(group_m_amplitude, d_alpha[peaks[p_arr[i]]]) <= 0.34:
+
+                if abs(d_alpha[peaks[p_arr[i]]] - group_m_amplitude) / max(group_m_amplitude,
+                                                                           d_alpha[peaks[p_arr[i]]]) <= 0.34:
                     cur_group.append(p_arr[i])
                     group_m_amplitude = np.nanmean(d_alpha[peaks[cur_group]])
                 elif d_alpha[peaks[p_arr[i]]] > group_m_amplitude:
                     if len(cur_group) > 1:
                         res_groups.append(cur_group)
-                    
+
                     cur_group = [p_arr[i]]
                     group_m_amplitude = d_alpha[peaks[cur_group]][0]
             if len(cur_group) > 0:
@@ -460,7 +476,7 @@ def get_valide_groups_from_struct_by_amplitude(groups_struct, d_alpha, peaks):
                 if group_str not in g_set:
                     g_set.add(group_str)
                     res_groups.append(cur_group)
-                
+
     return res_groups
 
 
@@ -471,7 +487,7 @@ def get_unique_point_from_groups(groups):
     return sorted(list(set_p))
 
 
-def get_groups_2(arr): # -> groups = {Delta: [mistake: float, group: list]}
+def get_groups_2(arr):  # -> groups = {Delta: [mistake: float, group: list]}
     n = len(arr)
     res_struct = {}
     if n < 2:
@@ -490,11 +506,11 @@ def get_groups_2(arr): # -> groups = {Delta: [mistake: float, group: list]}
                 res_struct[cur_delta].sort(key=lambda x: len(x[1]), reverse=True)
             else:
                 res_struct[cur_delta] = [[cur_err, cur_group]]
-            
+
             cur_delta = arr[i] - arr[cur_group[-1]]
             cur_group = [cur_group[-1], i]
             cur_err = 0.0
-    
+
     if cur_delta in res_struct.keys():
         res_struct[cur_delta].append([cur_err, cur_group])
         res_struct[cur_delta].sort(key=lambda x: len(x[1]), reverse=True)
@@ -503,14 +519,14 @@ def get_groups_2(arr): # -> groups = {Delta: [mistake: float, group: list]}
     return res_struct
 
 
-def get_groups(arr): # -> groups = {Delta: [mistake: float, group: list]}
+def get_groups(arr):  # -> groups = {Delta: [mistake: float, group: list]}
     n = len(arr)
     res_struct = {}
     if n < 2:
         return res_struct
     cur_group = []
 
-    stac_p =  list(range(n - 2, -1, -1))
+    stac_p = list(range(n - 2, -1, -1))
     while len(stac_p) > 0:
         # print(stac_p, cur_group)
         ind = stac_p.pop()
@@ -526,7 +542,8 @@ def get_groups(arr): # -> groups = {Delta: [mistake: float, group: list]}
             else:
                 fl_save = True
         else:
-            while ind < n - 2 and abs(arr[ind] - (arr[cur_group[-1]] + cur_delta)) >= abs(arr[ind + 1] - (arr[cur_group[-1]] + cur_delta)):
+            while ind < n - 2 and abs(arr[ind] - (arr[cur_group[-1]] + cur_delta)) >= abs(
+                    arr[ind + 1] - (arr[cur_group[-1]] + cur_delta)):
                 if ind not in stac_p:
                     stac_p.append(ind)
                 ind += 1
@@ -542,7 +559,7 @@ def get_groups(arr): # -> groups = {Delta: [mistake: float, group: list]}
             else:  # save cur group & upd pointer
                 fl_save = True
                 stac_p.append(ind - 1)
-    
+
         if fl_save or ind == n - 1:
             if cur_delta in res_struct.keys():
                 res_struct[cur_delta].append([cur_err, cur_group])
@@ -550,7 +567,7 @@ def get_groups(arr): # -> groups = {Delta: [mistake: float, group: list]}
             else:
                 res_struct[cur_delta] = [[cur_err, cur_group]]
             cur_group = []
-        
+
     return res_struct
 
 
@@ -568,10 +585,11 @@ def merge_peaks(points, d_alpha):
             res.append(points[i])
     return res
 
+
 def get_groups_from_signal(d_alpha, d_alpha_f, d_alpha_d2f, l_edge, r_edge):  # -> groups = [group: list(time points)]
-    DELTA_DELTA = 0.1 # 
-    DELTA_MAX = 1000 # points
-    MIN_GROUP = 2 # min num points in group
+    DELTA_DELTA = 0.1  #
+    DELTA_MAX = 1000  # points
+    MIN_GROUP = 2  # min num points in group
 
     # get peaks on diagnostic (in the one group)
     peaks = np.array(get_d1_crosses(d_alpha_f, d_alpha_d2f, l_edge, r_edge))
@@ -594,12 +612,12 @@ def get_groups_from_signal(d_alpha, d_alpha_f, d_alpha_d2f, l_edge, r_edge):  # 
         peaks_ind = get_unique_point_from_groups(valid_groups)
         # get new peaks time points
         cur_peaks = copy.copy(cur_peaks[peaks_ind])
-    
+
     all_groups_struct = get_groups(cur_peaks)
     # print("- logg: ", all_groups_struct)
     valid_groups = get_valide_groups_from_struct_by_amplitude(all_groups_struct, d_alpha, cur_peaks)
     # print("- logg: ", sorted(valid_groups, key=lambda x: x[0]))
-    
+
     # # group post processing: union by delta & get missing
     valid_groups = list(map(lambda x: merge_peaks(x, d_alpha) if len(x) > 1 else x, valid_groups))
     valid_groups = list(filter(lambda x: len(x) > 1, sorted(valid_groups, key=lambda x: x[0])))
@@ -612,7 +630,7 @@ def get_groups_from_signal(d_alpha, d_alpha_f, d_alpha_d2f, l_edge, r_edge):  # 
             # res_peaks.append(merge_peaks(cur_peaks[gr_indeces], d_alpha))
             res_peaks.append(cur_peaks[gr_indeces])
             continue
-        
+
         k = check_subsequention(res_peaks[-1], cur_peaks[gr_indeces])  # get len of subsequention
         if k != -1 and k != len(cur_peaks[gr_indeces]):  # check valide & not full subsequention
             res_arr = np.concatenate([res_peaks[-1], cur_peaks[gr_indeces][k:]])
@@ -628,4 +646,3 @@ def get_groups_from_signal(d_alpha, d_alpha_f, d_alpha_d2f, l_edge, r_edge):  # 
             # res_peaks.append(merge_peaks(cur_peaks[gr_indeces], d_alpha))
             res_peaks.append(cur_peaks[gr_indeces])
     return res_peaks
-
