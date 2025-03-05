@@ -4,7 +4,7 @@ import numpy as np
 
 import re
 
-from Peaks_processing import Signal_meta, proc_slices, get_slices, Slice
+from source.Peaks_processing import Signal_meta, proc_slices, get_slices, Slice
 
 
 def filt_signal(arr: np.ndarray, N: int, W: float) -> np.ndarray:
@@ -63,7 +63,17 @@ def smooth_steklov(y: np.ndarray, box_pts: int, ro: float = 0.1) -> np.ndarray:
 
 
 def get_ind_fromColumns(columns: list) -> list:
-    return [int(re.search(r"ch\d", name).group(1)) for name in columns]
+    '''
+
+    :param columns:
+    :return:
+    '''
+    res = []
+    for name in columns:
+        match = re.search(r"\d+", name)
+        if match:
+            res.append(int(match[0]))
+    return res
 
 
 def dbs_A_dFi(df: pd.DataFrame,
@@ -80,7 +90,7 @@ def dbs_A_dFi(df: pd.DataFrame,
     :param smoothing:
     :return:
     '''
-    channels = get_ind_fromColumns(df.columns)
+    channels = get_ind_fromColumns(list(df.columns))
 
     if smoothing == "rect":
         smoothing_f = smooth_rect
