@@ -34,7 +34,7 @@ def plot_shoot(F_ID: int, res_slices_edges: np.ndarray,
     :return:
     '''
 
-    channels = get_ind_fromColumns(df.columns)
+    channels = get_ind_fromColumns(list(dbs_df.columns))
     ind = start_ind
     while True:
 
@@ -61,13 +61,14 @@ def plot_shoot(F_ID: int, res_slices_edges: np.ndarray,
 
         axs[0].set_title(f"#{F_ID}")
 
-        d_alpha_f = filt_signal(np.diff(df.d_alpha), 5, 0.1)
+        d_alpha = df.d_alpha.to_numpy()
+        d_alpha_f = filt_signal(np.diff(d_alpha), 5, 0.1)
         d_alpha_d2f = filt_signal(np.diff(d_alpha_f), 5, 0.1)
 
-        axs[0].plot(range(plot_l_edge, plot_r_edge), df.d_alpha[plot_l_edge:plot_r_edge],
+        axs[0].plot(range(plot_l_edge, plot_r_edge), d_alpha[plot_l_edge:plot_r_edge],
                     label="D-alpha", alpha=0.8, zorder=2)
 
-        edges_y = (df.d_alpha[plot_l_edge] + df.d_alpha[plot_r_edge]) / 2
+        edges_y = (d_alpha[plot_l_edge] + d_alpha[plot_r_edge]) / 2
         axs[0].scatter([l_edge, r_edge], [edges_y, edges_y], s=1000, color="black", marker="|",
                        zorder=1)
 
@@ -82,13 +83,13 @@ def plot_shoot(F_ID: int, res_slices_edges: np.ndarray,
         if len(x) > 1:
             print(f"Start prossecing peaks ...", end=" ")  #
             start_time = time.time()
-            res_groups_peaks = get_groups_from_signal(df.d_alpha, d_alpha_f, d_alpha_d2f, l_edge, r_edge)
+            res_groups_peaks = get_groups_from_signal(d_alpha, d_alpha_f, d_alpha_d2f, l_edge, r_edge)
             # print("- logg: ", res_groups_peaks)
             print(f"- Tooks: {(time.time() - start_time) * 1e3:.3f} ms")
             for g_i in range(len(res_groups_peaks)):
                 points = res_groups_peaks[g_i]
                 c = colors[g_i % len(colors)]
-                axs[0].scatter(points, df.d_alpha[points] + (2 * (g_i % 2) - 1) * 0.05, s=10, color=c, zorder=0)
+                axs[0].scatter(points, d_alpha[points] + (2 * (g_i % 2) - 1) * 0.05, s=10, color=c, zorder=0)
 
                 m_d = get_time_delta(points) / 1e3
                 std_d = 0
@@ -106,12 +107,12 @@ def plot_shoot(F_ID: int, res_slices_edges: np.ndarray,
                 while num > 10:
                     num = num // 10
                     d += 1
-                axs[0].annotate(p_i, (x[p_i] - (25) * (r_edge - l_edge) / 5000 - 15 * d, df.d_alpha[x[p_i]] + 0.03))
+                axs[0].annotate(p_i, (x[p_i] - (25) * (r_edge - l_edge) / 5000 - 15 * d, d_alpha[x[p_i]] + 0.03))
                 for ax in axs:
                     ax.axvline(x[p_i], linestyle=':', color='k', alpha=0.7)
         elif len(x) == 1:
-            axs[0].annotate(0, (x[0] - (25) * (r_edge - l_edge) / 5000, df.d_alpha[x[0]] + 0.03))
-            axs[0].scatter(x, df.d_alpha[x], s=20, color="black")
+            axs[0].annotate(0, (x[0] - (25) * (r_edge - l_edge) / 5000, d_alpha[x[0]] + 0.03))
+            axs[0].scatter(x, d_alpha[x], s=20, color="black")
             for ax in axs:
                 ax.axvline(x[0], linestyle=':', color='k', alpha=0.7)
 
